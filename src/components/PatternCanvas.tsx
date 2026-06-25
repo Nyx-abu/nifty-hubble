@@ -480,17 +480,27 @@ export const PatternCanvas = () => {
 
   const handleEnd = () => {
     if (isDrawing && activeTile && currentSeq.length >= 2) {
-      // Check if this exact sequence already exists in the same grid tile
+      // Check if this exact sequence already exists anywhere in the entire canvas
       const existingPattern = patterns.find(p => 
-        p.gridTile.x === activeTile.x && 
-        p.gridTile.y === activeTile.y && 
         p.dotSequence.length === currentSeq.length &&
         p.dotSequence.every((val, index) => val === currentSeq[index])
       );
 
       if (existingPattern) {
-        // Pattern already exists: highlight it in the list instead of creating duplicate
+        // Pattern already exists: highlight it and auto-center viewport on it
         setSelectedPatternId(existingPattern.id);
+        
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const targetZoom = 1;
+          const worldCenterX = existingPattern.gridTile.x * TILE_SIZE + TILE_SIZE / 2;
+          const worldCenterY = existingPattern.gridTile.y * TILE_SIZE + TILE_SIZE / 2;
+          setZoom(targetZoom);
+          setOffset({
+            x: canvas.width / 2 - worldCenterX * targetZoom,
+            y: canvas.height / 2 - worldCenterY * targetZoom
+          });
+        }
       } else {
         // Finalize pattern sequence
         const dirs = ['TL', 'TC', 'TR', 'ML', 'C', 'MR', 'BL', 'BC', 'BR'];
