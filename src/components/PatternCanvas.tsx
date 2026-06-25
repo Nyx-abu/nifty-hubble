@@ -23,7 +23,8 @@ export const PatternCanvas = () => {
     setZoom,
     setGridLinesVisible,
     addPattern,
-    selectedPatternId
+    selectedPatternId,
+    setSelectedPatternId
   } = useStore();
 
   // Local drawing/panning state
@@ -479,22 +480,35 @@ export const PatternCanvas = () => {
 
   const handleEnd = () => {
     if (isDrawing && activeTile && currentSeq.length >= 2) {
-      // Finalize pattern sequence
-      const dirs = ['TL', 'TC', 'TR', 'ML', 'C', 'MR', 'BL', 'BC', 'BR'];
-      const startingIndex = currentSeq[0];
-      const startingDirection = dirs[startingIndex] || 'N/A';
+      // Check if this exact sequence already exists in the same grid tile
+      const existingPattern = patterns.find(p => 
+        p.gridTile.x === activeTile.x && 
+        p.gridTile.y === activeTile.y && 
+        p.dotSequence.length === currentSeq.length &&
+        p.dotSequence.every((val, index) => val === currentSeq[index])
+      );
 
-      const newPattern: Pattern = {
-        id: `p_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        gridTile: activeTile,
-        dotSequence: currentSeq,
-        startingDot: startingIndex,
-        startingDirection,
-        timestamp: Date.now(),
-        status: 'attempted'
-      };
+      if (existingPattern) {
+        // Pattern already exists: highlight it in the list instead of creating duplicate
+        setSelectedPatternId(existingPattern.id);
+      } else {
+        // Finalize pattern sequence
+        const dirs = ['TL', 'TC', 'TR', 'ML', 'C', 'MR', 'BL', 'BC', 'BR'];
+        const startingIndex = currentSeq[0];
+        const startingDirection = dirs[startingIndex] || 'N/A';
 
-      addPattern(newPattern);
+        const newPattern: Pattern = {
+          id: `p_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+          gridTile: activeTile,
+          dotSequence: currentSeq,
+          startingDot: startingIndex,
+          startingDirection,
+          timestamp: Date.now(),
+          status: 'attempted'
+        };
+
+        addPattern(newPattern);
+      }
     }
 
     setIsDrawing(false);
