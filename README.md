@@ -1,32 +1,62 @@
-# React + TypeScript + Vite
+<div align="center">
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+# Nifty Hubble
 
-Currently, two official plugins are available:
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://nifty-hubble-mu.vercel.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+A React + TypeScript web application scaffolded with Vite and deployed on Vercel.
 
-## React Compiler
+[**Live Demo →**](https://nifty-hubble-mu.vercel.app)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+</div>
 
-## Expanding the Oxlint configuration
+---
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Getting Started
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+git clone https://github.com/Nyx-abu/nifty-hubble.git
+cd nifty-hubble
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+The dev server starts at `http://localhost:5173` by default.
+
+### Build for Production
+
+```bash
+npm run build   # outputs to dist/
+npm run preview # preview the production build locally
+```
+
+## Project Structure
+
+```
+nifty-hubble/
+├── public/            # Static assets
+├── src/               # Application source code
+│   ├── assets/        # Images, fonts, and other assets
+│   ├── App.tsx        # Root component
+│   └── main.tsx       # Application entry point
+├── index.html         # HTML entry point
+├── vite.config.ts     # Vite configuration
+├── tsconfig.json      # TypeScript configuration
+└── package.json       # Dependencies and scripts
+```
+
+## Tech Stack
+
+| Layer      | Technology          |
+| ---------- | ------------------- |
+| Language   | TypeScript          |
+| UI         | React               |
+| Bundler    | Vite                |
+| Deployment | Vercel              |
+
+## License
+
+MIT
