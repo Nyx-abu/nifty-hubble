@@ -1,74 +1,94 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { useState } from 'react';
-import { PatternCanvas } from './components/PatternCanvas';
-import { HistoryPanel } from './components/HistoryPanel';
-import { ControlOverlay } from './components/ControlOverlay';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { BookOpen, CircleHelp, KeyRound, Moon, Sparkles, Sun } from 'lucide-react';
+import type { PageName } from './types';
+import { DrawPage } from './components/DrawPage';
 import { useStore } from './store';
+import './App.css';
+
+const PredictionsPage = lazy(() => import('./components/PredictionsPage').then((module) => ({ default: module.PredictionsPage })));
+const HistoryPage = lazy(() => import('./components/HistoryPage').then((module) => ({ default: module.HistoryPage })));
+
+const pages: { id: PageName; label: string; short: string; icon: typeof KeyRound }[] = [
+  { id: 'draw', label: 'Draw', short: 'Draw', icon: KeyRound },
+  { id: 'predictions', label: 'Memory cues', short: 'Cues', icon: Sparkles },
+  { id: 'history', label: 'History', short: 'History', icon: BookOpen },
+];
+
+function readTheme(): boolean {
+  try {
+    const saved = window.localStorage.getItem('pattern-notebook-theme');
+    return saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+}
+
+function readPage(): PageName {
+  const value = window.location.hash.replace('#', '');
+  return value === 'predictions' || value === 'history' ? value : 'draw';
+}
 
 export default function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { patterns } = useStore();
+  const [page, setPage] = useState<PageName>(readPage);
+  const [pendingSequence, setPendingSequence] = useState<number[] | null>(null);
+  const [dark, setDark] = useState(readTheme);
+  const storageError = useStore((state) => state.storageError);
+  const patterns = useStore((state) => state.patterns);
+
+  useEffect(() => {
+    const sync = () => setPage(readPage());
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    try { window.localStorage.setItem('pattern-notebook-theme', dark ? 'dark' : 'light'); } catch { /* Theme stays in memory when storage is disabled. */ }
+  }, [dark]);
+
+  const navigate = useCallback((next: PageName) => {
+    if (window.location.hash !== `#${next}`) window.location.hash = next;
+    setPage(next);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const loadSequence = useCallback((sequence: number[]) => {
+    setPendingSequence(sequence);
+    navigate('draw');
+  }, [navigate]);
+
+  const clearPending = useCallback(() => setPendingSequence(null), []);
+  const currentName = pages.find((item) => item.id === page)?.label ?? 'Draw';
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-950 flex flex-row font-sans text-slate-100 antialiased">
-      
-      {/* Left/Main interactive infinite canvas area */}
-      <div className="relative flex-1 h-full flex flex-col overflow-hidden min-w-0">
-        
-        {/* Floating brand and action controls */}
-        <ControlOverlay />
-        
-        {/* Main Canvas rendering engine */}
-        <PatternCanvas />
-
-        {/* Floating Sidebar toggle button */}
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 pointer-events-auto">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold backdrop-blur border shadow-xl transition-all duration-300 ${
-              sidebarOpen
-                ? 'bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white border-slate-800'
-                : 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-blue-500/15'
-            }`}
-            title={sidebarOpen ? "Hide History & Statistics" : "Show History & Statistics"}
-          >
-            {sidebarOpen ? (
-              <>
-                <PanelRightClose className="w-4 h-4" />
-                <span className="hidden sm:inline">Close Panel</span>
-              </>
-            ) : (
-              <>
-                <PanelRightOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">History & Stats ({patterns.length})</span>
-                <span className="sm:hidden">{patterns.length}</span>
-              </>
-            )}
-          </button>
+    <div className="app-shell">
+      <header className="topbar">
+        <a className="brand" href="#draw" onClick={() => navigate('draw')} aria-label="Pattern notebook home">
+          <span className="brand-mark"><KeyRound size={18} strokeWidth={2.2} /></span>
+          <span><strong>Pattern</strong><small>NOTEBOOK</small></span>
+        </a>
+        <nav className="desktop-nav" aria-label="Main navigation">
+          {pages.map(({ id, label }) => <button type="button" className={page === id ? 'nav-link active' : 'nav-link'} key={id} onClick={() => navigate(id)} aria-current={page === id ? 'page' : undefined}>{label}{id === 'history' && patterns.length > 0 && <span className="nav-count">{patterns.length}</span>}</button>)}
+        </nav>
+        <div className="topbar-actions">
+          <span className="page-indicator">{currentName}</span>
+          <button type="button" className="theme-toggle" onClick={() => setDark((value) => !value)} aria-label={`Switch to ${dark ? 'light' : 'dark'} theme`} title={`Switch to ${dark ? 'light' : 'dark'} theme`}>{dark ? <Sun size={17} /> : <Moon size={17} />}</button>
         </div>
+      </header>
 
-        {/* Desktop-only subtle hints footer */}
-        <div className="absolute bottom-4 left-44 hidden md:block text-[10px] text-slate-500 uppercase tracking-widest font-semibold font-mono pointer-events-none select-none">
-          Click+Drag canvas to navigate • Click+Drag dot vertex to draw paths
-        </div>
-      </div>
+      {storageError && <div className="storage-banner" role="status"><CircleHelp size={16} />{storageError}</div>}
+      <main id="main-content" className="main-content">
+        <Suspense fallback={<div className="page-loading" role="status">Opening your notebook…</div>}>
+          {page === 'draw' && <DrawPage initialSequence={pendingSequence} onSequenceLoaded={clearPending} />}
+          {page === 'predictions' && <PredictionsPage onTry={loadSequence} />}
+          {page === 'history' && <HistoryPage onLoad={loadSequence} />}
+        </Suspense>
+      </main>
 
-      {/* Right Collapsible Panel (History logs & Analytical graphics) */}
-      <div 
-        className={`h-full border-l border-slate-900 transition-all duration-300 ease-in-out shrink-0 relative z-10 ${
-          sidebarOpen ? 'w-80 md:w-96 opacity-100' : 'w-0 opacity-0 overflow-hidden border-l-0'
-        }`}
-      >
-        <div className="w-80 md:w-96 h-full">
-          <HistoryPanel />
-        </div>
-      </div>
-
+      <nav className="mobile-nav" aria-label="Main navigation">
+        {pages.map(({ id, icon: Icon, short }) => <button type="button" className={page === id ? 'mobile-nav-link active' : 'mobile-nav-link'} key={id} onClick={() => navigate(id)} aria-current={page === id ? 'page' : undefined}><Icon size={19} strokeWidth={page === id ? 2.2 : 1.8} /><span>{short}</span>{id === 'history' && patterns.length > 0 && <i>{patterns.length}</i>}</button>)}
+      </nav>
+      <footer className="site-footer"><span>Made for careful remembering.</span><span>Your notebook is stored locally on this device.</span></footer>
     </div>
   );
 }
