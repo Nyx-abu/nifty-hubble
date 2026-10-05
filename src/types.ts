@@ -1,5 +1,6 @@
 export type PatternStatus = 'attempted' | 'successful' | 'failed';
 export type PatternOutcome = Exclude<PatternStatus, 'attempted'>;
+export type ImportResult = { ok: true; imported: number; skipped: number } | { ok: false; message: string };
 
 /** A saved 3×3 sequence. `gridTile` remains optional for legacy imports. */
 export interface Pattern {
@@ -26,7 +27,7 @@ export interface AppState {
   correctLastOutcome: (id: string, outcome: PatternOutcome) => void;
   updatePatternNote: (id: string, note: string) => void;
   removePattern: (id: string) => void;
-  importPatterns: (value: unknown) => { ok: true; imported: number } | { ok: false; message: string };
+  importPatterns: (value: unknown) => ImportResult;
   clearPatterns: () => void;
   clearStorageError: () => void;
 }

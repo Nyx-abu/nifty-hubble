@@ -36,7 +36,12 @@ export function HistoryPage({ onLoad }: { onLoad: (sequence: number[]) => void }
     try {
       const data: unknown = JSON.parse(await file.text());
       const result = importPatterns(data);
-      setNotice(result.ok ? `Imported ${result.imported} pattern ${result.imported === 1 ? 'record' : 'records'}.` : result.message);
+      if (!result.ok) {
+        setNotice(result.message);
+      } else {
+        const importedMessage = `Imported ${result.imported} pattern ${result.imported === 1 ? 'record' : 'records'}.`;
+        setNotice(result.skipped > 0 ? `${importedMessage} Skipped ${result.skipped} invalid ${result.skipped === 1 ? 'record' : 'records'}.` : importedMessage);
+      }
     } catch {
       setNotice('Import failed. Choose a valid JSON pattern history file.');
     }

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { mergePatterns, parsePattern } from './domain/history';
+import { mergePatterns, parseImportRecords, parsePattern } from './domain/history';
 import { patternKey } from './domain/patterns';
 import type { AppState, Pattern } from './types';
 
@@ -70,17 +70,17 @@ export const useStore = create<AppState>((set, get) => ({
     const payload = asRecord(value);
     const list = Array.isArray(value) ? value : asRecord(payload?.state)?.patterns;
     if (!Array.isArray(list)) return { ok: false, message: 'This file does not contain a pattern list.' };
-    const parsed = list.map(parsePattern);
-    if (parsed.some((pattern) => pattern === null)) return { ok: false, message: 'Import stopped: every record needs a stable ID, unique dot indexes from 0 to 8, and valid saved metadata.' };
+    const { patterns: parsed, skipped } = parseImportRecords(list);
+    if (parsed.length === 0) return { ok: false, message: 'Import stopped: no valid pattern records were found. Every record needs a stable ID, unique dot indexes from 0 to 8, and valid saved metadata.' };
     let merged: Pattern[];
     try {
-      merged = mergePatterns(parsed as Pattern[], get().patterns);
+      merged = mergePatterns(parsed, get().patterns);
     } catch (error) {
       return { ok: false, message: error instanceof Error ? error.message : 'Import stopped: incompatible record IDs.' };
     }
     persistenceAllowed = true;
     set({ patterns: merged, storageError: null });
-    return { ok: true, imported: parsed.length };
+    return { ok: true, imported: parsed.length, skipped };
   },
 }));
 

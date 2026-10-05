@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mergePatterns, parsePattern } from '../src/domain/history.ts';
+import { mergePatterns, parseImportRecords, parsePattern } from '../src/domain/history.ts';
 import type { Pattern } from '../src/types.ts';
 
 function record(overrides: Partial<Pattern> = {}): Pattern {
@@ -32,6 +32,16 @@ test('invalid imported sequences and metadata are rejected at the boundary', () 
     { dotSequence: [0, 1, 2, 3], outcomes: ['unknown'] },
   ];
   for (const item of invalid) assert.equal(parsePattern(item), null, JSON.stringify(item));
+});
+
+test('partial imports keep valid records and report malformed records', () => {
+  const valid = { id: 'valid', dotSequence: [0, 1, 2, 5], status: 'failed', timestamp: 100 };
+  const malformed = { id: 'malformed', dotSequence: [0, 1, 2, 5, 5], status: 'failed', timestamp: 200 };
+
+  const result = parseImportRecords([valid, malformed]);
+
+  assert.deepEqual(result.patterns.map((pattern) => pattern.id), ['valid']);
+  assert.equal(result.skipped, 1);
 });
 
 test('untested legacy records do not invent a tried outcome', () => {

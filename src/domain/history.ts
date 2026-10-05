@@ -41,6 +41,21 @@ export function parsePattern(value: unknown): Pattern | null {
   };
 }
 
+export interface ParsedImportRecords {
+  patterns: Pattern[];
+  skipped: number;
+}
+
+/** Keep valid records from a mixed backup while counting records rejected at the validation boundary. */
+export function parseImportRecords(value: unknown): ParsedImportRecords {
+  if (!Array.isArray(value)) return { patterns: [], skipped: 0 };
+  const parsed = value.map(parsePattern);
+  return {
+    patterns: parsed.filter((pattern): pattern is Pattern => pattern !== null),
+    skipped: parsed.filter((pattern) => pattern === null).length,
+  };
+}
+
 function contributors(pattern: Pattern): string[] {
   return pattern.mergedIds?.length ? pattern.mergedIds : [pattern.id];
 }
